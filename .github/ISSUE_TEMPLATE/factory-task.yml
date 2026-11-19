@@ -1,0 +1,25 @@
+name: Factory task
+description: A spec for the software factory
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Task type
+      options: [bug fix, small feature, dependency update, test addition]
+    validations: { required: true }
+  - type: textarea
+    id: goal
+    attributes: { label: Goal, description: One paragraph. What and why. }
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete, checkable bullets.
+    validations: { required: true }
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Files and areas the agent must not touch.
+    validations: { required: true }
