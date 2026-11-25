@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      OUT_DIR: ${{ runner.temp }}/factory
       BRANCH: factory/issue-${{ github.event.issue.number }}-${{ github.run_id }}
     steps:
+      - name: Set output dir
+        run: echo "OUT_DIR=$RUNNER_TEMP/factory" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with: { persist-credentials: false }
       - uses: actions/setup-python@v5
