@@ -896,6 +896,23 @@ class TestArrowShift:
             1972, 1, 7, 1, 14, 30, tzinfo="Africa/Monrovia"
         )
 
+    @pytest.mark.parametrize(
+        "start, shift_kwargs, expected",
+        [
+            # day is clamped to the last day of the target month
+            ((2023, 1, 31), {"months": 1}, (2023, 2, 28)),
+            # leap year: clamped to Feb 29
+            ((2024, 1, 31), {"months": 1}, (2024, 2, 29)),
+            ((2023, 3, 31), {"months": -1}, (2023, 2, 28)),
+            ((2023, 1, 31), {"days": 1}, (2023, 2, 1)),
+            # crosses year boundary into a leap year February
+            ((2023, 12, 31), {"months": 2}, (2024, 2, 29)),
+        ],
+    )
+    def test_shift_month_and_year_boundaries(self, start, shift_kwargs, expected):
+        result = arrow.Arrow(*start).shift(**shift_kwargs)
+        assert result == arrow.Arrow(*expected)
+
 
 class TestArrowRange:
     def test_year(self):
