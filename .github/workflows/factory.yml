@@ -66,4 +66,6 @@ jobs:
             --title "factory: issue #$ISSUE_NUM" --body-file "$OUT_DIR/pr_body.md"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: factory-run-${{ github.run_id }}, path: "${{ runner.temp }}/factory" }
+        with:
+          name: factory-run-${{ github.run_id }}
+          path: ${{ runner.temp }}/factory
