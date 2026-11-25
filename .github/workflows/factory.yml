@@ -6,7 +6,9 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-concurrency: { group: factory, cancel-in-progress: false }
+concurrency:
+  group: factory
+  cancel-in-progress: false
 
 jobs:
   implement:
@@ -19,52 +21,54 @@ jobs:
       - name: Set output dir
         run: echo "OUT_DIR=$RUNNER_TEMP/factory" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
-        with: { persist-credentials: false }
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - name: Install project deps   # VERIFY these against CONTRIBUTING / your Step 0 notes
+        with:
+          python-version: "3.12"
+      - name: Install project deps
         run: |
           pip install -r requirements/requirements.txt -r requirements/requirements-tests.txt
           pip install -e .
-      - name: Install Claude Code     # check code.claude.com/docs/en/setup for the current method
+      - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
-      - name: Write spec (issue text passed via env, never inlined into shell)
+      - name: Write spec
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           mkdir -p "$OUT_DIR"
           printf '# %s\n\n%s\n' "$ISSUE_TITLE" "$ISSUE_BODY" > "$OUT_DIR/spec.md"
-      - name: Run agent
+      - name: Run factory
+        id: factory
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          MAX_TURNS: "30"
-          MAX_USD: "2.00"
-        run: python factory/run_agent.py "$OUT_DIR/spec.md"
-      - name: Run tests
-        id: tests
-        continue-on-error: true
-        run: python -m pytest -q
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: python factory/orchestrate.py "$OUT_DIR/spec.md"
       - name: Commit, push, open PR
+        if: steps.factory.outputs.status == 'passed'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          TESTS: ${{ steps.tests.outcome }}
         run: |
-          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
-            gh issue comment "$ISSUE_NUM" --body "Factory run produced no changes."
-            exit 0
-          fi
           git config user.name "factory-bot"
           git config user.email "factory-bot@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add -A
           git commit -m "factory: implement #$ISSUE_NUM"
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
-          { cat "$OUT_DIR/summary.md"; echo; echo "**Tests:** $TESTS"; echo; echo "Closes #$ISSUE_NUM"; } > "$OUT_DIR/pr_body.md"
+          { cat "$OUT_DIR/summary.md"; echo; echo "Closes #$ISSUE_NUM"; } > "$OUT_DIR/pr_body.md"
           gh pr create --repo "$GITHUB_REPOSITORY" --base "$DEFAULT_BRANCH" --head "$BRANCH" \
             --title "factory: issue #$ISSUE_NUM" --body-file "$OUT_DIR/pr_body.md"
+      - name: Escalate to human
+        if: steps.factory.outputs.status != 'passed'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue edit "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --add-label needs-human
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body-file "$OUT_DIR/summary.md"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
