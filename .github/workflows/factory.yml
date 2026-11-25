@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p "$OUT_DIR"
           printf '# %s\n\n%s\n' "$ISSUE_TITLE" "$ISSUE_BODY" > "$OUT_DIR/spec.md"
-      - name: Run agent (only secret available: the API key)
+      - name: Run agent
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MAX_TURNS: "30"
