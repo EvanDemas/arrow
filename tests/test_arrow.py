@@ -1727,6 +1727,14 @@ class TestArrowSpan:
         assert floor == self.arrow.floor("month")
         assert ceil == self.arrow.ceil("month")
 
+    @pytest.mark.parametrize("frame", ["hour", "day", "month"])
+    def test_floor_matches_span_start(self, frame):
+        assert self.arrow.floor(frame) == self.arrow.span(frame)[0]
+
+    @pytest.mark.parametrize("frame", ["hour", "day", "month"])
+    def test_ceil_matches_span_end(self, frame):
+        assert self.arrow.ceil(frame) == self.arrow.span(frame)[1]
+
     def test_floor_week_start(self):
         """
         Test floor method with week_start parameter for different week starts.
