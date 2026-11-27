@@ -44,6 +44,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ISSUE_NUM: ${{ github.event.issue.number }}
+          TASK_BUDGET_USD: "0.50"
         run: python factory/orchestrate.py "$OUT_DIR/spec.md"
       - name: Commit, push, open PR
         if: steps.factory.outputs.status == 'passed'
